@@ -26,20 +26,20 @@ const (
 )
 
 var (
-	// Brand colors
-	brandPurple    = lipgloss.Color("#845DF9")
-	brandPurpleDim = lipgloss.Color("#6B4DC7")
-	bgDark         = lipgloss.Color("#1E1E2E")
-	bgCard         = lipgloss.Color("#252535")
-	bgInput        = lipgloss.Color("#313244")
-	textPrimary    = lipgloss.Color("#CDD6F4")
-	textSecondary  = lipgloss.Color("#A6ADC8")
-	textMuted      = lipgloss.Color("#6C7086")
-	textSuccess    = lipgloss.Color("#A6E3A1")
-	textError      = lipgloss.Color("#F38BA8")
-	textWarning    = lipgloss.Color("#F9E2AF")
-	borderColor    = lipgloss.Color("#45475A")
-	borderActive   = lipgloss.Color("#845DF9")
+	// Catppuccin Mocha palette
+	brandPurple    = lipgloss.Color("#cba6f7") // Mauve
+	brandPurpleDim = lipgloss.Color("#b4befe") // Lavender
+	bgDark         = lipgloss.Color("#1e1e2e") // Base
+	bgCard         = lipgloss.Color("#181825") // Mantle
+	bgInput        = lipgloss.Color("#313244") // Surface0
+	textPrimary    = lipgloss.Color("#cdd6f4") // Text
+	textSecondary  = lipgloss.Color("#bac2de") // Subtext1
+	textMuted      = lipgloss.Color("#6c7086") // Overlay0
+	textSuccess    = lipgloss.Color("#a6e3a1") // Green
+	textError      = lipgloss.Color("#f38ba8") // Red
+	textWarning    = lipgloss.Color("#f9e2af") // Yellow
+	borderColor    = lipgloss.Color("#45475a") // Surface1
+	borderActive   = lipgloss.Color("#cba6f7") // Mauve
 
 	// Styles
 	headerStyle = lipgloss.NewStyle().
@@ -1549,7 +1549,7 @@ func (m model) viewDiskStep() string {
 	s += titleStyle.Render("Install Disk") + "\n"
 
 	// Line 3: Warning (always shown)
-	s += warningStyle.Render("⚠ All data on selected disk will be erased!") + "\n"
+	s += warningStyle.Render("!!! All data on selected disk will be erased!") + "\n"
 
 	// Lines 4-11: List items (8 lines fixed)
 	if len(m.disks) == 0 {
@@ -1659,7 +1659,7 @@ func (m model) viewConfirmStep() string {
 func (m model) viewComplete() string {
 	return lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Center,
 		cardActiveStyle.Render(
-			successStyle.Bold(true).Render("✓ Configuration saved!")+"\n\n"+
+			successStyle.Bold(true).Render("Configuration saved!")+"\n\n"+
 				labelStyle.Render("Proceeding with installation...")+"\n"+
 				labelStyle.Render("You can close this window."),
 		),

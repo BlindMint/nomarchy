@@ -21,6 +21,24 @@ LUKS_PART=""
 log() { echo "[*] $*"; }
 error() { echo "[ERROR] $*" >&2; exit 1; }
 
+# Apply the nomarchy dark background (#1E1E2E) to the terminal.
+# Works for both Linux TTY (via palette remap) and terminal emulators (via OSC 11).
+apply_terminal_theme() {
+    printf '\e]P01e1e2e'       # Linux console: remap color-0 (black) to #1E1E2E
+    printf '\e[40m'            # Set background to color-0
+    printf '\e]11;#1e1e2e\a'   # Terminal emulator: OSC 11 background
+    printf '\e[37m'            # Light grey foreground for readability
+    clear
+}
+
+reset_terminal_theme() {
+    printf '\e]P0000000'       # Restore color-0 to true black
+    printf '\e[0m'             # Reset all attributes
+    printf '\e]111\a'          # OSC 111: reset terminal background to default
+}
+
+trap reset_terminal_theme EXIT
+
 prompt_passwords() {
     log "Prompting for passwords..."
     echo "Enter LUKS passphrase (twice for confirmation):"
@@ -228,7 +246,7 @@ configure_system() {
     # mkinitcpio: plymouth must come before autodetect; plymouth-encrypt replaces encrypt
     mkdir -p /mnt/etc/mkinitcpio.conf.d
     cat > /mnt/etc/mkinitcpio.conf.d/nomarchy.conf <<'EOF'
-HOOKS=(base udev plymouth autodetect microcode modconf kms keyboard keymap consolefont block plymouth-encrypt filesystems fsck)
+HOOKS=(base udev plymouth keyboard autodetect microcode modconf kms keymap consolefont block encrypt filesystems fsck)
 EOF
 }
 
@@ -365,6 +383,8 @@ EOF
 }
 
 main() {
+    apply_terminal_theme
+
     # Load TUI config if available, otherwise fall back to interactive prompts
     if ! load_tui_config; then
         log "TUI binary not found — using interactive prompts."

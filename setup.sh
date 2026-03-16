@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
-PAVE_DIR="$(cd "$(dirname "$0")" && pwd)"
+NOMARCHY_DIR="$(cd "$(dirname "$0")" && pwd)"
 USERNAME="${USER}"
 USER_HOME="$HOME"
 SENTINEL="$HOME/.local/state/nomarchy/setup-done"
@@ -13,7 +13,7 @@ has_internet() { ping -c1 -W3 archlinux.org &>/dev/null; }
 
 install_packages() {
     local pkgs
-    pkgs=$(grep -v '^\s*#' "$PAVE_DIR/packages/desktop.txt" | grep -v '^\s*$' | tr '\n' ' ')
+    pkgs=$(grep -v '^\s*#' "$NOMARCHY_DIR/packages/desktop.txt" | grep -v '^\s*$' | tr '\n' ' ')
     sudo pacman -S --noconfirm --needed $pkgs
 }
 
@@ -31,7 +31,7 @@ install_paru() {
 
 install_aur_packages() {
     local pkgs
-    pkgs=$(grep -v '^\s*#' "$PAVE_DIR/packages/aur.txt" | grep -v '^\s*$' | sed 's|^|aur/|' | tr '\n' ' ')
+    pkgs=$(grep -v '^\s*#' "$NOMARCHY_DIR/packages/aur.txt" | grep -v '^\s*$' | sed 's|^|aur/|' | tr '\n' ' ')
     paru -S --noconfirm --needed $pkgs </dev/null || log "Some AUR packages failed"
 }
 
@@ -41,7 +41,7 @@ install_aur() {
         mkdir -p "$USER_HOME/.local/bin"
         cat > "$USER_HOME/.local/bin/nomarchy-post-install" <<SCRIPT
 #!/bin/bash
-exec bash "$PAVE_DIR/setup.sh" --aur-only
+exec bash "$NOMARCHY_DIR/setup.sh" --aur-only
 SCRIPT
         chmod +x "$USER_HOME/.local/bin/nomarchy-post-install"
         return
@@ -53,23 +53,21 @@ SCRIPT
 
 deploy_configs() {
     # ~/.config
-    rsync -a "$PAVE_DIR/config/" "$USER_HOME/.config/"
+    rsync -a "$NOMARCHY_DIR/config/" "$USER_HOME/.config/"
 
     # ~/.local/bin
     mkdir -p "$USER_HOME/.local/bin"
-    rsync -a "$PAVE_DIR/bin/" "$USER_HOME/.local/bin/"
+    rsync -a "$NOMARCHY_DIR/bin/" "$USER_HOME/.local/bin/"
     chmod +x "$USER_HOME/.local/bin"/*
 
     # .desktop files
-    if [[ -d "$PAVE_DIR/applications" ]]; then
+    if [[ -d "$NOMARCHY_DIR/applications" ]]; then
         mkdir -p "$USER_HOME/.local/share/applications"
-        cp "$PAVE_DIR/applications/"*.desktop "$USER_HOME/.local/share/applications/" 2>/dev/null || true
+        cp "$NOMARCHY_DIR/applications/"*.desktop "$USER_HOME/.local/share/applications/" 2>/dev/null || true
     fi
 
     # bashrc
-    cp "$PAVE_DIR/default/bashrc" "$USER_HOME/.bashrc"
-    mkdir -p "$USER_HOME/.local/share/nomarchy/default/bash"
-    cp -r "$PAVE_DIR/default/bash/"* "$USER_HOME/.local/share/nomarchy/default/bash/"
+    cp "$NOMARCHY_DIR/default/bashrc" "$USER_HOME/.bashrc"
 
     # Screensaver character
     mkdir -p "$USER_HOME/.config/nomarchy/branding"
@@ -78,10 +76,10 @@ deploy_configs() {
 
 setup_theme() {
     local theme="${INSTALL_THEME:-catppuccin}"
-    if [[ -d "$PAVE_DIR/themes/$theme" ]]; then
+    if [[ -d "$NOMARCHY_DIR/themes/$theme" ]]; then
         log "Setting default theme: $theme"
-        export NOMARCHY_PATH="$PAVE_DIR"
-        "$USER_HOME/.local/bin/nomarchy-theme-set" "$theme" || log "Theme setup failed — run nomarchy-theme-set $theme manually"
+        NOMARCHY_PATH="$NOMARCHY_DIR" "$USER_HOME/.local/bin/nomarchy-theme-set" "$theme" \
+            || log "Theme setup failed — run nomarchy-theme-set $theme manually"
     else
         log "Theme '$theme' not found in themes/ — skipping. Run nomarchy-theme-set <theme> manually."
     fi
@@ -148,8 +146,9 @@ setup_snapper() {
 }
 
 setup_hardware() {
-    # Bluetooth
-    sudo systemctl enable bluetooth
+    # Bluetooth (optional — skip if not installed)
+    systemctl list-unit-files bluetooth.service &>/dev/null \
+        && sudo systemctl enable bluetooth || true
 
     # NetworkManager
     sudo systemctl enable NetworkManager
@@ -169,10 +168,11 @@ setup_mimetypes() {
 }
 
 setup_firewall() {
-    sudo ufw enable
+    command -v ufw &>/dev/null && sudo ufw enable || true
 }
 
 setup_docker() {
+    command -v docker &>/dev/null || return 0
     sudo systemctl enable docker
     sudo usermod -aG docker "$USERNAME"
 
