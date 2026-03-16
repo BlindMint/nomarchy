@@ -53,13 +53,9 @@ check_root() {
 }
 
 check_go() {
-    if command -v go &>/dev/null; then
-        log "Go found: $(go version)"
-    else
-        warn "Go is not installed — the nomarchy-setup TUI will not be built."
-        warn "Install Go (pacman -S go) and re-run usb-make to include the TUI binary."
-        warn "Continuing without it; install.sh will fall back to prompting manually."
-    fi
+    command -v go &>/dev/null \
+        || error "Go is required to build the installer TUI.\n       Install it with: sudo pacman -S go"
+    log "Go found: $(go version)"
 }
 
 check_deps() {
@@ -354,23 +350,14 @@ build_tui() {
     echo -e "${BOLD}Step 5: Build TUI${NC}"
     echo ""
 
-    if ! command -v go &>/dev/null; then
-        warn "Skipping TUI build — Go not installed."
-        warn "The installer will prompt for configuration manually."
-        return
-    fi
-
     local tui_dir="$SCRIPT_DIR/tui"
     local tui_bin="$tui_dir/nomarchy-setup"
 
-    if [[ ! -f "$tui_dir/go.mod" ]]; then
-        warn "tui/go.mod not found — skipping TUI build."
-        return
-    fi
+    [[ -f "$tui_dir/go.mod" ]] || error "tui/go.mod not found — repository may be incomplete."
 
     log "Building nomarchy-setup TUI..."
     (cd "$tui_dir" && go build -o nomarchy-setup ./cmd/nomarchy-setup) \
-        || { warn "TUI build failed — continuing without it."; return; }
+        || error "TUI build failed. Fix the build error above and re-run usb-make."
 
     log "TUI built: $tui_bin"
 }

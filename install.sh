@@ -40,12 +40,28 @@ prompt_passwords() {
 
 load_tui_config() {
     local env_file="/tmp/nomarchy-install.env"
+
+    # If env file already exists (user ran TUI separately), just source it
     if [[ -f "$env_file" ]]; then
         log "Loading configuration from TUI ($env_file)..."
         # shellcheck source=/dev/null
         source "$env_file"
         return 0
     fi
+
+    # Auto-launch the TUI binary if present
+    local tui_bin="$SCRIPT_DIR/tui/nomarchy-setup"
+    if [[ -x "$tui_bin" ]]; then
+        log "Launching nomarchy setup TUI..."
+        "$tui_bin"
+        if [[ -f "$env_file" ]]; then
+            # shellcheck source=/dev/null
+            source "$env_file"
+            return 0
+        fi
+        error "TUI exited without writing config. Cannot continue."
+    fi
+
     return 1
 }
 
@@ -351,7 +367,7 @@ EOF
 main() {
     # Load TUI config if available, otherwise fall back to interactive prompts
     if ! load_tui_config; then
-        log "No TUI config found — using interactive prompts."
+        log "TUI binary not found — using interactive prompts."
 
         # Network check
         if ! ping -c1 -W3 archlinux.org &>/dev/null; then
