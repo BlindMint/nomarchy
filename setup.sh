@@ -38,6 +38,7 @@ install_aur_packages() {
 install_aur() {
     if ! has_internet; then
         log "No internet — skipping AUR packages. Run 'nomarchy-post-install' when connected."
+        mkdir -p "$USER_HOME/.local/bin"
         cat > "$USER_HOME/.local/bin/nomarchy-post-install" <<SCRIPT
 #!/bin/bash
 exec bash "$PAVE_DIR/setup.sh" --aur-only
@@ -193,10 +194,10 @@ main() {
 
     log "Starting nomarchy setup..."
 
+    deploy_configs
     install_packages
     install_aur
     setup_gpu_drivers
-    deploy_configs
     setup_snapper
     setup_hardware
     setup_mimetypes
