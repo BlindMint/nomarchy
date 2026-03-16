@@ -108,9 +108,9 @@ pick_menu() {
         fi
         case "$key" in
             $'\x1b[A'|$'\x1b[D')   # up / left
-                (( _sel > 0 )) && (( _sel-- )) ;;
+                (( _sel > 0 )) && (( _sel-- )) || true ;;
             $'\x1b[B'|$'\x1b[C')   # down / right
-                (( _sel < _count - 1 )) && (( _sel++ )) ;;
+                (( _sel < _count - 1 )) && (( _sel++ )) || true ;;
             '')                     # enter
                 tput cnorm
                 _result=$_sel
