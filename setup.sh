@@ -76,6 +76,17 @@ deploy_configs() {
     echo "ｦ" > "$USER_HOME/.config/nomarchy/branding/screensaver_matrix.txt"
 }
 
+setup_theme() {
+    local theme="${INSTALL_THEME:-catppuccin}"
+    if [[ -d "$PAVE_DIR/themes/$theme" ]]; then
+        log "Setting default theme: $theme"
+        export NOMARCHY_PATH="$PAVE_DIR"
+        "$USER_HOME/.local/bin/nomarchy-theme-set" "$theme" || log "Theme setup failed — run nomarchy-theme-set $theme manually"
+    else
+        log "Theme '$theme' not found in themes/ — skipping. Run nomarchy-theme-set <theme> manually."
+    fi
+}
+
 setup_gpu_drivers() {
     local gpu_info
     gpu_info=$(lspci | grep -iE 'vga|3d|display' || true)
@@ -195,6 +206,7 @@ main() {
     log "Starting nomarchy setup..."
 
     deploy_configs
+    setup_theme
     install_packages
     install_aur
     setup_gpu_drivers
