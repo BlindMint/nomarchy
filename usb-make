@@ -52,6 +52,16 @@ check_root() {
     [[ $EUID -eq 0 ]] || error "This script must be run as root (sudo ./usb-make)"
 }
 
+check_go() {
+    if command -v go &>/dev/null; then
+        log "Go found: $(go version)"
+    else
+        warn "Go is not installed — the nomarchy-setup TUI will not be built."
+        warn "Install Go (pacman -S go) and re-run usb-make to include the TUI binary."
+        warn "Continuing without it; install.sh will fall back to prompting manually."
+    fi
+}
+
 check_deps() {
     local missing=()
     # Note: parted is intentionally NOT used — it corrupts isohybrid MBR boot code on Arch ISOs.
@@ -336,12 +346,42 @@ create_config_partition() {
 }
 
 # =============================================================================
-# Step 5: Copy nomarchy to config partition
+# Step 5: Build TUI binary (if Go is available)
+# =============================================================================
+
+build_tui() {
+    header
+    echo -e "${BOLD}Step 5: Build TUI${NC}"
+    echo ""
+
+    if ! command -v go &>/dev/null; then
+        warn "Skipping TUI build — Go not installed."
+        warn "The installer will prompt for configuration manually."
+        return
+    fi
+
+    local tui_dir="$SCRIPT_DIR/tui"
+    local tui_bin="$tui_dir/nomarchy-setup"
+
+    if [[ ! -f "$tui_dir/go.mod" ]]; then
+        warn "tui/go.mod not found — skipping TUI build."
+        return
+    fi
+
+    log "Building nomarchy-setup TUI..."
+    (cd "$tui_dir" && go build -o nomarchy-setup ./cmd/nomarchy-setup) \
+        || { warn "TUI build failed — continuing without it."; return; }
+
+    log "TUI built: $tui_bin"
+}
+
+# =============================================================================
+# Step 6: Copy nomarchy to config partition
 # =============================================================================
 
 copy_files() {
     header
-    echo -e "${BOLD}Step 5: Copy nomarchy to USB${NC}"
+    echo -e "${BOLD}Step 6: Copy nomarchy to USB${NC}"
     echo ""
 
     MOUNT_CONFIG=$(mktemp -d /tmp/nomarchy-XXXXX)
@@ -378,7 +418,8 @@ summary() {
     echo "        mkdir /mnt/setup"
     echo "        mount LABEL=NOMARCHY /mnt/setup"
     echo ""
-    echo "  3. Run the installer:"
+    echo "  3. Run the installer (TUI first, then install script):"
+    echo "        /mnt/setup/nomarchy/tui/nomarchy-setup"
     echo "        bash /mnt/setup/nomarchy/install.sh"
     echo ""
     echo "  4. After reboot, setup.sh runs automatically on first login."
@@ -389,10 +430,12 @@ summary() {
 main() {
     check_root
     check_deps
+    check_go
     get_iso
     select_usb
     write_iso
     create_config_partition
+    build_tui
     copy_files
     summary
 }

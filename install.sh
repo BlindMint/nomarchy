@@ -38,6 +38,90 @@ prompt_passwords() {
     [[ "$USER_PASSWORD" == "$confirm" ]] || error "User passwords do not match"
 }
 
+load_tui_config() {
+    local env_file="/tmp/nomarchy-install.env"
+    if [[ -f "$env_file" ]]; then
+        log "Loading configuration from TUI ($env_file)..."
+        # shellcheck source=/dev/null
+        source "$env_file"
+        return 0
+    fi
+    return 1
+}
+
+setup_wifi() {
+    if [[ -z "${WIFI_SSID:-}" ]]; then
+        return
+    fi
+    log "Connecting to WiFi: $WIFI_SSID"
+    nmcli device wifi connect "$WIFI_SSID" password "${WIFI_PASSWORD:-}" 2>/dev/null \
+        || log "WiFi connect via nmcli failed — trying iwctl fallback"
+    # Verify connectivity
+    if ! ping -c1 -W3 archlinux.org &>/dev/null; then
+        log "WiFi connection could not be verified — continuing anyway"
+    fi
+}
+
+persist_wifi() {
+    [[ -n "${WIFI_SSID:-}" ]] || return 0
+
+    local conn_dir="/mnt/etc/NetworkManager/system-connections"
+    local conn_file="$conn_dir/${WIFI_SSID}.nmconnection"
+    local uuid
+    uuid=$(uuidgen 2>/dev/null || cat /proc/sys/kernel/random/uuid)
+
+    log "Persisting WiFi connection '$WIFI_SSID' into installed system..."
+    mkdir -p "$conn_dir"
+
+    if [[ -n "${WIFI_PASSWORD:-}" ]]; then
+        cat > "$conn_file" <<EOF
+[connection]
+id=${WIFI_SSID}
+uuid=${uuid}
+type=wifi
+autoconnect=yes
+
+[wifi]
+mode=infrastructure
+ssid=${WIFI_SSID}
+
+[wifi-security]
+auth-alg=open
+key-mgmt=wpa-psk
+psk=${WIFI_PASSWORD}
+
+[ipv4]
+method=auto
+
+[ipv6]
+addr-gen-mode=default
+method=auto
+EOF
+    else
+        cat > "$conn_file" <<EOF
+[connection]
+id=${WIFI_SSID}
+uuid=${uuid}
+type=wifi
+autoconnect=yes
+
+[wifi]
+mode=infrastructure
+ssid=${WIFI_SSID}
+
+[ipv4]
+method=auto
+
+[ipv6]
+addr-gen-mode=default
+method=auto
+EOF
+    fi
+
+    chmod 600 "$conn_file"
+    log "WiFi profile written: $conn_file"
+}
+
 partition_disk() {
     log "Partitioning $INSTALL_DISK..."
     sgdisk --zap-all "$INSTALL_DISK"
@@ -125,11 +209,23 @@ configure_system() {
 
     arch-chroot /mnt systemctl enable NetworkManager
 
-    # mkinitcpio: add encrypt hook so initramfs can unlock the LUKS volume at boot
+    # mkinitcpio: plymouth must come before autodetect; plymouth-encrypt replaces encrypt
     mkdir -p /mnt/etc/mkinitcpio.conf.d
     cat > /mnt/etc/mkinitcpio.conf.d/nomarchy.conf <<'EOF'
-HOOKS=(base udev autodetect microcode modconf kms keyboard keymap consolefont block encrypt filesystems fsck)
+HOOKS=(base udev plymouth autodetect microcode modconf kms keyboard keymap consolefont block plymouth-encrypt filesystems fsck)
 EOF
+}
+
+setup_plymouth() {
+    local theme_src="$SCRIPT_DIR/default/plymouth"
+    local theme_dst="/mnt/usr/share/plymouth/themes/nomarchy"
+
+    mkdir -p "$theme_dst"
+    cp "$theme_src"/*.png  "$theme_dst/"
+    cp "$theme_src"/nomarchy.script  "$theme_dst/"
+    cp "$theme_src"/nomarchy.plymouth "$theme_dst/"
+
+    arch-chroot /mnt plymouth-set-default-theme nomarchy
     arch-chroot /mnt mkinitcpio -P
 }
 
@@ -253,24 +349,59 @@ EOF
 }
 
 main() {
-    # Network check
-    if ! ping -c1 -W3 archlinux.org &>/dev/null; then
-        error "No internet connection. Connect via iwctl or dhcpcd and retry."
+    # Load TUI config if available, otherwise fall back to interactive prompts
+    if ! load_tui_config; then
+        log "No TUI config found — using interactive prompts."
+
+        # Network check
+        if ! ping -c1 -W3 archlinux.org &>/dev/null; then
+            error "No internet connection. Connect via iwctl or dhcpcd and retry."
+        fi
+
+        # Prompt for install disk if not set
+        if [[ -z "$INSTALL_DISK" ]]; then
+            echo "Available disks:"
+            lsblk -d -o NAME,SIZE,MODEL | grep -v NAME
+            read -p "Enter target disk (e.g., /dev/sda): " INSTALL_DISK
+        fi
+
+        prompt_passwords
+    else
+        # Apply TUI-supplied keyboard layout (if loadkeys is available)
+        if [[ -n "${INSTALL_KB_LAYOUT:-}" ]]; then
+            loadkeys "$INSTALL_KB_LAYOUT" 2>/dev/null || true
+        fi
+
+        # Connect WiFi if credentials were provided
+        setup_wifi
+
+        # Network check (after potential WiFi setup)
+        if ! ping -c1 -W3 archlinux.org &>/dev/null; then
+            error "No internet connection. Check WiFi/ethernet and retry."
+        fi
+
+        # Validate required variables
+        [[ -n "${INSTALL_DISK:-}" ]]      || error "INSTALL_DISK not set in TUI config"
+        [[ -n "${LUKS_PASSPHRASE:-}" ]]   || error "LUKS_PASSPHRASE not set in TUI config"
+        [[ -n "${USER_PASSWORD:-}" ]]     || error "USER_PASSWORD not set in TUI config"
+        [[ -n "${INSTALL_USER:-}" ]]      || error "INSTALL_USER not set in TUI config"
+        [[ -n "${INSTALL_HOSTNAME:-}" ]]  || error "INSTALL_HOSTNAME not set in TUI config"
+        [[ -n "${INSTALL_TIMEZONE:-}" ]]  || error "INSTALL_TIMEZONE not set in TUI config"
+
+        log "Disk       : $INSTALL_DISK"
+        log "User       : $INSTALL_USER"
+        log "Hostname   : $INSTALL_HOSTNAME"
+        log "Timezone   : $INSTALL_TIMEZONE"
+        log "KB Layout  : ${INSTALL_KB_LAYOUT:-default}"
     fi
 
-    # Prompt for install disk if not set
-    if [[ -z "$INSTALL_DISK" ]]; then
-        echo "Available disks:"
-        lsblk -d -o NAME,SIZE,MODEL | grep -v NAME
-        read -p "Enter target disk (e.g., /dev/sda): " INSTALL_DISK
-    fi
-
-    prompt_passwords
     partition_disk
     setup_luks
     setup_btrfs
     install_base
+    persist_wifi
     configure_system
+    setup_plymouth
     setup_bootloader
     setup_greetd
     copy_setup_files

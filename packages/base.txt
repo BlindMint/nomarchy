@@ -22,3 +22,7 @@ wireplumber
 # Fonts (Hyprland needs at least one to render)
 ttf-liberation
 noto-fonts
+
+# Required by setup.sh before desktop packages are installed
+rsync
+pciutils
