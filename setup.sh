@@ -6,6 +6,10 @@ USERNAME="${USER}"
 USER_HOME="$HOME"
 SENTINEL="$HOME/.local/state/nomarchy/setup-done"
 
+# Ensure user binaries are findable — the systemd launcher uses a minimal PATH
+# that does not include ~/.local/bin, so nomarchy-* commands would not be found.
+export PATH="$USER_HOME/.local/bin:$PATH"
+
 log() { echo "[*] $*"; }
 error() { echo "[ERROR] $*" >&2; exit 1; }
 
