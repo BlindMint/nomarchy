@@ -1,0 +1,60 @@
+#!/bin/bash
+
+if [[ -z $1 ]]; then
+  echo "Usage: nomarchy-theme-set <theme-name>"
+  exit 1
+fi
+
+CURRENT_THEME_PATH="$HOME/.config/nomarchy/current/theme"
+NEXT_THEME_PATH="$HOME/.config/nomarchy/current/next-theme"
+USER_THEMES_PATH="$HOME/.config/nomarchy/themes"
+NOMARCHY_THEMES_PATH="$NOMARCHY_PATH/themes"
+
+THEME_NAME=$(echo "$1" | sed -E 's/<[^>]+>//g' | tr '[:upper:]' '[:lower:]' | tr ' ' '-')
+
+if [[ ! -d $NOMARCHY_THEMES_PATH/$THEME_NAME ]] && [[ ! -d $USER_THEMES_PATH/$THEME_NAME ]]; then
+  echo "Theme '$THEME_NAME' does not exist"
+  exit 1
+fi
+
+# Setup clean next theme directory (for atomic theme config swapping)
+rm -rf "$NEXT_THEME_PATH"
+mkdir -p "$NEXT_THEME_PATH"
+
+# Copy official theme first, then overlay user customizations on top
+cp -r "$NOMARCHY_THEMES_PATH/$THEME_NAME/"* "$NEXT_THEME_PATH/" 2>/dev/null
+cp -r "$USER_THEMES_PATH/$THEME_NAME/"* "$NEXT_THEME_PATH/" 2>/dev/null
+
+# Generate dynamic configs
+nomarchy-theme-set-templates
+
+# Swap next theme in as current
+rm -rf "$CURRENT_THEME_PATH"
+mv "$NEXT_THEME_PATH" "$CURRENT_THEME_PATH"
+
+# Store theme name for reference
+echo "$THEME_NAME" >"$HOME/.config/nomarchy/current/theme.name"
+
+# Change background with theme
+nomarchy-theme-bg-next
+
+# Restart components to apply new theme
+if pgrep -x waybar >/dev/null; then
+  nomarchy-restart-waybar
+fi
+nomarchy-restart-swayosd
+nomarchy-restart-terminal
+nomarchy-restart-hyprctl
+nomarchy-restart-btop
+nomarchy-restart-opencode
+nomarchy-restart-mako
+
+# Change app-specific themes
+nomarchy-theme-set-gnome
+nomarchy-theme-set-browser
+nomarchy-theme-set-vscode
+nomarchy-theme-set-obsidian
+nomarchy-theme-set-keyboard
+
+# Call hook on theme set
+nomarchy-hook theme-set "$THEME_NAME"

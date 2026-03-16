@@ -1,0 +1,11 @@
+# Changes require a restart to take effect.
+
+# Ensure Nomarchy bins are in the path
+export NOMARCHY_PATH=$HOME/.local/share/nomarchy
+export PATH=$NOMARCHY_PATH/bin:$PATH:$HOME/.local/bin
+
+# Set default terminal and editor
+source ~/.config/uwsm/default
+
+# Activate mise if present on the system
+nomarchy-cmd-present mise && eval "$(mise activate bash --shims)"

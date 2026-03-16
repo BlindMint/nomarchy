@@ -1,0 +1,202 @@
+# Desktop packages - full set installed in Phase 2 (pacman)
+# Organized by category with comments
+
+# Terminals
+alacritty
+fish
+ghostty
+ghostty-shell-integration
+ghostty-terminfo
+kitty
+
+# Shells and utilities
+bash-completion
+bat
+eza
+fastfetch
+fzf
+gum
+htop
+less
+man-db
+man-pages
+starship
+tldr
+tree
+usage
+zoxide
+
+# Development
+clang
+fd
+git
+github-cli
+jq
+llvm
+neovim
+python-mako
+python-poetry-core
+ripgrep
+rust
+tree-sitter-cli
+xmlstarlet
+
+# System tools
+audit
+avahi
+bluez
+bluez-libs
+bluetui
+brightnessctl
+btop
+cronie
+curl
+expac
+fail2ban
+inetutils
+inxi
+iwd
+kernel-modules-hook
+nss-mdns
+openssh
+plocate
+powertop
+power-profiles-daemon
+rkhunter
+sbctl
+smartmontools
+system-config-printer
+ufw
+util-linux
+whois
+wireless-regdb
+
+# Hardware
+android-tools
+alsa-utils
+libpulse
+pavucontrol
+pamixer
+playerctl
+
+# File managers
+dolphin
+nautilus
+nautilus-python
+gnome-disk-utility
+
+# Graphics and media
+evince
+ffmpeg
+ffmpegthumbnailer
+grim
+gpu-screen-recorder
+imagemagick
+imv
+libqalculate
+libreoffice-fresh
+mangohud
+mpv
+obs-studio
+satty
+slurp
+sushi
+swaybg
+swayimg
+viu
+wl-clipboard
+
+# Hyprland ecosystem
+hyprgraphics
+hypridle
+hyprland-guiutils
+hyprlauncher
+hyprlock
+hyprpaper
+hyprpicker
+hyprpolkitagent
+hyprshot
+hyprsunset
+hyprutils
+waybar
+xdg-terminal-exec
+xdg-utils
+
+# Notifications
+dunst
+mako
+swayosd
+
+# Fonts
+fontconfig
+noto-fonts-cjk
+noto-fonts-emoji
+noto-fonts-extra
+ttf-cascadia-mono-nerd
+ttf-dejavu
+ttf-hack-nerd
+ttf-jetbrains-mono-nerd
+woff2-font-awesome
+
+# Themes and icons
+gnome-themes-extra
+kvantum-qt5
+
+# Applications
+cmatrix
+gamemode
+gnome-calculator
+gvfs
+gvfs-mtp
+gvfs-nfs
+gvfs-smb
+lazydocker
+lazygit
+libsecret
+libyaml
+lutris
+obsidian
+polkit-gnome
+protontricks
+qt5-wayland
+qt6-wayland
+tmux
+unzip
+wiremix
+
+# Plymouth
+plymouth
+
+# Networking
+networkmanager
+
+# Virtualization
+docker
+docker-compose
+
+# Drivers and firmware
+linux-firmware
+btrfs-progs
+exfatprogs
+ntfs-3g
+snapper
+
+# From nomarchy-other
+autoconf-archive
+base
+base-devel
+dart
+dkms
+egl-wayland
+gst-plugin-pipewire
+gtk4-layer-shell
+intltool
+jdk-openjdk
+libsass
+pipewire-alsa
+pipewire-jack
+pipewire-pulse
+sassc
+webp-pixbuf-loader
+wget
+zram-generator

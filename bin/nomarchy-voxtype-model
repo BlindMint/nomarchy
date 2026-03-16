@@ -1,0 +1,5 @@
+#!/bin/bash
+set -e
+
+nomarchy-launch-floating-terminal-with-presentation "voxtype setup model"
+nomarchy-restart-waybar

@@ -1,0 +1,32 @@
+#!/bin/bash
+
+# Remove preinstalled Nomarchy applications (web apps, TUIs, and selected packages).
+# This removes all web apps, TUIs, plus specific desktop applications.
+
+if gum confirm "Are you sure you want to remove all preinstalled web apps, TUI wrappers, and desktop applications?"; then
+  echo -e "Removing preinstalled Nomarchy applications...\n"
+
+  nomarchy-webapp-remove-all
+  nomarchy-tui-remove-all
+
+  cp ~/.config/hypr/bindings.conf ~/.config/hypr/bindings.conf.bak
+  cp "$NOMARCHY_PATH/default/hypr/plain-bindings.conf" ~/.config/hypr/bindings.conf
+  hyprctl reload
+
+  nomarchy-pkg-drop \
+    aether \
+    typora \
+    spotify \
+    libreoffice-fresh \
+    1password-beta \
+    1password-cli \
+    xournalpp \
+    signal-desktop \
+    pinta \
+    obsidian \
+    obs-studio \
+    kdenlive \
+    lazydocker \
+    opencode \
+    claude-code
+fi

@@ -1,0 +1,7 @@
+#!/bin/bash
+
+# Overwrite the user configs for the Waybar menu bar with the Nomarchy defaults and restart the service.
+
+nomarchy-refresh-config waybar/config.jsonc
+nomarchy-refresh-config waybar/style.css
+nomarchy-restart-waybar

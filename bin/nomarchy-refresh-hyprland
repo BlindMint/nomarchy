@@ -1,0 +1,9 @@
+#!/bin/bash
+
+# Overwrite all the user configs in ~/.config/hypr with the Nomarchy defaults.
+
+nomarchy-refresh-config hypr/autostart.conf
+nomarchy-refresh-config hypr/bindings.conf
+nomarchy-refresh-config hypr/input.conf
+nomarchy-refresh-config hypr/looknfeel.conf
+nomarchy-refresh-config hypr/hyprland.conf

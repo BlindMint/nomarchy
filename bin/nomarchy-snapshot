@@ -1,0 +1,35 @@
+#!/bin/bash
+
+set -e
+
+COMMAND="$1"
+NOMARCHY_PATH=${NOMARCHY_PATH:-$HOME/.local/share/nomarchy}
+
+if [[ -z $COMMAND ]]; then
+  echo "Usage: nomarchy-snapshot <create|restore>" >&2
+  exit 1
+fi
+
+if ! command -v snapper &>/dev/null; then
+  exit 127 # nomarchy-update can use this to just ignore if snapper is not available
+fi
+
+case "$COMMAND" in
+create)
+  DESC="$(nomarchy-version)"
+
+  echo -e "\e[32mCreate system snapshot\e[0m"
+
+  # Get existing snapper config names from CSV output
+  mapfile -t CONFIGS < <(sudo snapper --csvout list-configs | awk -F, 'NR>1 {print $1}')
+
+  for config in "${CONFIGS[@]}"; do
+    sudo snapper -c "$config" create -c number -d "$DESC"
+  done
+  echo
+  ;;
+restore)
+  echo "To restore from a snapshot, boot from the live ISO and use btrfs to roll back."
+  echo "See: https://wiki.archlinux.org/title/Snapper#Restore_a_snapshot"
+  ;;
+esac

@@ -1,0 +1,20 @@
+#!/bin/bash
+set -e
+
+# Overwrite all user configs with the Nomarchy defaults.
+
+if (( EUID == 0 )); then
+  echo "Error: This script should not be run as root"
+  exit 1
+fi
+
+echo "Resetting all Nomarchy configs"
+cp -R ~/.local/share/nomarchy/config/* ~/.config/
+cp ~/.local/share/nomarchy/default/bashrc ~/.bashrc
+echo '[[ -f ~/.bashrc ]] && . ~/.bashrc' | tee ~/.bash_profile >/dev/null
+
+$(bash $NOMARCHY_PATH/install/config/theme.sh)
+
+nomarchy-refresh-boot
+nomarchy-refresh-plymouth
+nomarchy-nvim-setup

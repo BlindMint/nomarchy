@@ -1,0 +1,9 @@
+[Unit]
+Description=Nomarchy Battery Monitor Check
+After=graphical-session.target
+
+[Service]
+Type=oneshot
+ExecStart=%h/.local/share/nomarchy/bin/nomarchy-battery-monitor
+Environment=DISPLAY=:0
+LogLevelMax=warning

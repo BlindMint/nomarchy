@@ -1,0 +1,3 @@
+#!/bin/bash
+
+nomarchy-restart-app swayosd-server

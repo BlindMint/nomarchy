@@ -1,0 +1,6 @@
+#!/bin/bash
+
+# Overwrite the user config for hyprsunset with the Nomarchy default and restart the service.
+#
+nomarchy-refresh-config hypr/hyprsunset.conf
+nomarchy-restart-hyprsunset

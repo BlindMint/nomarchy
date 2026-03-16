@@ -1,0 +1,24 @@
+# Wayland/Hyprland minimum (need this to get a desktop on first boot)
+hyprland
+xdg-desktop-portal-hyprland
+xdg-desktop-portal-gtk
+uwsm
+hyprpaper
+
+# greetd
+greetd-tuigreet
+
+# Bootstrap terminal (only terminal available before Phase 2; removed after setup)
+foot
+
+# Plymouth (needed for initramfs + splash)
+plymouth
+
+# Audio minimum (greetd needs PAM, pipewire starts via user session)
+pipewire
+pipewire-audio
+wireplumber
+
+# Fonts (Hyprland needs at least one to render)
+ttf-liberation
+noto-fonts

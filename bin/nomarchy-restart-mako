@@ -1,0 +1,5 @@
+#!/bin/bash
+
+# Reload mako configuration (used by the Nomarchy theme switching).
+
+makoctl reload

@@ -1,0 +1,5 @@
+### nomarchy .gitignore
+
+.claude
+docs/
+iso/

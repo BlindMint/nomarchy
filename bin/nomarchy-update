@@ -1,0 +1,20 @@
+#!/bin/bash
+
+# Nomarchy system updater
+# Upgrades all packages (pacman + AUR via paru), updates firmware, syncs time, refreshes configs
+
+set -e
+
+echo "[nomarchy-update] Upgrading packages..."
+paru -Syu --noconfirm
+
+echo "[nomarchy-update] Updating firmware..."
+nomarchy-update-firmware 2>/dev/null || true
+
+echo "[nomarchy-update] Syncing time..."
+nomarchy-update-time 2>/dev/null || true
+
+echo "[nomarchy-update] Refreshing configs..."
+nomarchy-refresh-config 2>/dev/null || true
+
+echo "[nomarchy-update] Done."

@@ -1,0 +1,6 @@
+#!/bin/bash
+
+# Overwrite the user tmux config with the Nomarchy default and reload tmux.
+
+nomarchy-refresh-config tmux/tmux.conf
+nomarchy-restart-tmux

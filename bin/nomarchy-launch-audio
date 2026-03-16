@@ -1,0 +1,5 @@
+#!/bin/bash
+
+# Launch the Nomarchy audio controls TUI (provided by wiremix).
+
+nomarchy-launch-or-focus-tui wiremix

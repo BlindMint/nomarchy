@@ -1,0 +1,35 @@
+# AUR packages (paru, Phase 2 if internet available)
+
+# Launcher / UI
+walker-bin
+hyprland-preview-share-picker
+aether
+swaynotificationcenter
+
+# Apps
+pinta
+typora
+
+# Fonts
+ttf-ia-writer
+
+# Icons
+yaru-icon-theme
+
+# Screensaver
+python-terminaltexteffects
+
+# System
+asdcontrol
+splashctl
+tobi-try
+tzupdate
+ufw-docker
+chkrootkit
+
+# Hardware (installed conditionally by hardware detection scripts)
+# asusctl
+# yt6801-dkms
+# nvidia-580xx-dkms
+# nvidia-580xx-utils
+# lib32-nvidia-580xx-utils

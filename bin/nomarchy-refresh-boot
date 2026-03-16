@@ -1,0 +1,12 @@
+#!/bin/bash
+
+# Refresh systemd-boot and regenerate initramfs.
+# Run this after kernel updates or boot config changes.
+
+echo "Updating systemd-boot..."
+sudo bootctl update
+
+echo "Regenerating initramfs..."
+sudo mkinitcpio -P
+
+echo "Done."

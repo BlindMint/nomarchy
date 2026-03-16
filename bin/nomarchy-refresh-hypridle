@@ -1,0 +1,6 @@
+#!/bin/bash
+
+# Overwrite the user config for hypridle with the Nomarchy default and restart the service.
+
+nomarchy-refresh-config hypr/hypridle.conf
+nomarchy-restart-hypridle

@@ -1,0 +1,8 @@
+#!/bin/bash
+
+# Overwrite the user config for the Plymouth drive decryption and boot sequence with the Nomarchy default and rebuild it.
+
+sudo cp ~/.local/share/nomarchy/default/plymouth/* /usr/share/plymouth/themes/arch/
+sudo plymouth-set-default-theme arch
+
+sudo mkinitcpio -P
