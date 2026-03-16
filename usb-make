@@ -69,6 +69,63 @@ check_deps() {
 }
 
 # =============================================================================
+# Arrow-key menu picker
+#   pick_menu <result_var> <label> <item1> <item2> ...
+#   Sets result_var to the index of the chosen item.
+# =============================================================================
+
+pick_menu() {
+    local -n _result=$1; shift
+    local _label="$1"; shift
+    local _items=("$@")
+    local _count=${#_items[@]}
+    local _sel=0
+
+    # Hide cursor; restore on function exit
+    tput civis
+    trap 'tput cnorm' RETURN
+
+    _draw() {
+        for (( i=0; i<_count; i++ )); do
+            if (( i == _sel )); then
+                echo -e "  ${GREEN}${BOLD}▶ ${_items[$i]}${NC}"
+            else
+                echo -e "    ${_items[$i]}"
+            fi
+        done
+    }
+
+    echo -e "$_label"
+    _draw
+
+    while true; do
+        local key
+        IFS= read -rsn1 key
+        if [[ $key == $'\x1b' ]]; then
+            local seq
+            IFS= read -rsn2 -t 0.1 seq
+            key+="$seq"
+        fi
+        case "$key" in
+            $'\x1b[A'|$'\x1b[D')   # up / left
+                (( _sel > 0 )) && (( _sel-- )) ;;
+            $'\x1b[B'|$'\x1b[C')   # down / right
+                (( _sel < _count - 1 )) && (( _sel++ )) ;;
+            '')                     # enter
+                tput cnorm
+                _result=$_sel
+                return 0 ;;
+            q|Q)
+                tput cnorm
+                warn "Aborted."
+                exit 0 ;;
+        esac
+        tput cuu "$_count"
+        _draw
+    done
+}
+
+# =============================================================================
 # Step 1: Get Arch ISO
 # =============================================================================
 
@@ -86,37 +143,54 @@ get_iso() {
         return
     fi
 
-    # Auto-detect ISOs in iso/
+    # Auto-detect ISOs in iso/ (sorted newest first by modification time)
     local found_isos=()
-    while IFS= read -r -d '' f; do
+    while IFS= read -r f; do
         found_isos+=("$f")
-    done < <(find "$SCRIPT_DIR/iso" -maxdepth 1 -name "archlinux*.iso" -print0 2>/dev/null)
+    done < <(find "$SCRIPT_DIR/iso" -maxdepth 1 -name "archlinux*.iso" -printf '%T@\t%p\n' 2>/dev/null \
+        | sort -rn | cut -f2-)
+
+    local want_manual=false
 
     if [[ ${#found_isos[@]} -gt 0 ]]; then
-        echo -e "${BOLD}Found local Arch ISO(s) in iso/:${NC}"
-        for i in "${!found_isos[@]}"; do
+        # Build display labels: "filename  (size)"
+        local labels=()
+        for f in "${found_isos[@]}"; do
             local size
-            size=$(du -sh "${found_isos[$i]}" 2>/dev/null | cut -f1)
-            echo "  $((i+1)). ${found_isos[$i]} ($size)"
+            size=$(du -sh "$f" 2>/dev/null | cut -f1)
+            labels+=("$(basename "$f")  (${size})")
         done
+        labels+=("Enter path manually")
+        labels+=("Download latest Arch ISO")
+
+        echo -e "${BOLD}Select an ISO:${NC}"
         echo ""
-        prompt "Use one? (enter number, or press Enter to specify/download):"
-        read -r iso_choice
-        if [[ "$iso_choice" =~ ^[0-9]+$ ]] && (( iso_choice >= 1 && iso_choice <= ${#found_isos[@]} )); then
-            ISO_PATH="${found_isos[$((iso_choice-1))]}"
+
+        local choice
+        pick_menu choice "" "${labels[@]}"
+        echo ""
+
+        local iso_count=${#found_isos[@]}
+        if (( choice < iso_count )); then
+            ISO_PATH="${found_isos[$choice]}"
+            log "Using: $ISO_PATH"
+            return
+        elif (( choice == iso_count )); then
+            want_manual=true
+        fi
+        # else: "Download latest" — fall through to download
+    fi
+
+    # Manual path entry (no ISOs found, or user chose "Enter path manually")
+    if [[ ${#found_isos[@]} -eq 0 ]] || $want_manual; then
+        prompt "Enter path to local Arch ISO (or press Enter to download latest):"
+        read -r local_iso
+        if [[ -n "$local_iso" ]]; then
+            [[ -f "$local_iso" ]] || error "File not found: $local_iso"
+            ISO_PATH="$local_iso"
             log "Using: $ISO_PATH"
             return
         fi
-    fi
-
-    prompt "Enter path to local Arch ISO (or press Enter to download latest):"
-    read -r local_iso
-
-    if [[ -n "$local_iso" ]]; then
-        [[ -f "$local_iso" ]] || error "File not found: $local_iso"
-        ISO_PATH="$local_iso"
-        log "Using: $ISO_PATH"
-        return
     fi
 
     # Download latest Arch ISO into iso/
