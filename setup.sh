@@ -191,7 +191,30 @@ EOF
 
 finalize_bootloader() {
     sudo mkinitcpio -P
-    sudo bootctl update
+}
+
+setup_limine_snapper() {
+    if ! command -v limine &>/dev/null; then
+        log "limine not found — skipping limine-snapper-sync setup"
+        return
+    fi
+
+    paru -S --noconfirm --needed aur/limine-mkinitcpio-hook aur/limine-snapper-sync
+
+    # Write entry generator config (cmdline extracted from current limine.conf)
+    local limine_conf="/boot/limine.conf"
+    local cmdline
+    cmdline=$(grep -m1 "^[[:space:]]*cmdline:" "$limine_conf" | sed 's/^[[:space:]]*cmdline:[[:space:]]*//')
+
+    sudo cp "$NOMARCHY_DIR/default/limine/default.conf" /etc/default/limine
+    sudo sed -i "s|@@CMDLINE@@|$cmdline|g" /etc/default/limine
+
+    # Overwrite boot entries with the visual config; limine-update will regenerate entries
+    sudo cp "$NOMARCHY_DIR/default/limine/limine.conf" "$limine_conf"
+
+    sudo systemctl enable limine-snapper-sync.service
+
+    sudo limine-update
 }
 
 mark_complete() {
@@ -215,6 +238,7 @@ main() {
     install_aur
     setup_gpu_drivers
     setup_snapper
+    setup_limine_snapper
     setup_hardware
     setup_mimetypes
     setup_firewall

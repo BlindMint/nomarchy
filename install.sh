@@ -219,6 +219,8 @@ install_base() {
         vim \
         greetd \
         pipewire wireplumber \
+        limine \
+        efibootmgr \
         $(grep -v '^\s*#' "$SCRIPT_DIR/packages/base.txt" | grep -v '^\s*$')
 
     genfstab -U /mnt >> /mnt/etc/fstab
@@ -263,35 +265,62 @@ setup_plymouth() {
     arch-chroot /mnt mkinitcpio -P
 }
 
-setup_bootloader() {
-    arch-chroot /mnt bootctl install
-
-    cat > /mnt/boot/loader/loader.conf <<'EOF'
-default  arch.conf
-timeout  3
-console-mode max
-editor   no
-EOF
-
+setup_limine() {
     local luks_uuid
     luks_uuid=$(blkid -s UUID -o value "$LUKS_PART")
+    local cmdline="cryptdevice=UUID=${luks_uuid}:cryptroot root=/dev/mapper/cryptroot rootflags=subvol=@ rw quiet splash"
 
-    cat > /mnt/boot/loader/entries/arch.conf <<EOF
-title   Arch Linux
-linux   /vmlinuz-linux
-initrd  /initramfs-linux.img
-options cryptdevice=UUID=${luks_uuid}:cryptroot root=/dev/mapper/cryptroot rootflags=subvol=@ rw quiet splash
+    # Install Limine EFI binary
+    mkdir -p /mnt/boot/EFI/BOOT
+    cp /mnt/usr/share/limine/BOOTX64.EFI /mnt/boot/EFI/BOOT/BOOTX64.EFI
+
+    # Register with EFI boot manager
+    local disk_dev
+    disk_dev=$(lsblk -no PKNAME "$BOOT_PART")
+    local part_num
+    part_num=$(cat "/sys/class/block/$(basename "$BOOT_PART")/partition")
+    efibootmgr --create \
+        --disk "/dev/$disk_dev" \
+        --part "$part_num" \
+        --label "nomarchy" \
+        --loader '\EFI\BOOT\BOOTX64.EFI' \
+        --unicode || true
+
+    # Visual config (colors, branding)
+    cp "$SCRIPT_DIR/default/limine/limine.conf" /mnt/boot/limine.conf
+
+    # Append initial boot entries (linux-zen first = default, linux as fallback)
+    # limine-update in setup.sh will replace these with auto-generated entries
+    cat >> /mnt/boot/limine.conf <<EOF
+
+/: nomarchy (linux-zen)
+    cmdline: $cmdline
+    protocol: linux
+    path: boot():/vmlinuz-linux-zen
+    initrd_path: boot():/initramfs-linux-zen.img
+
+/: nomarchy (linux-zen fallback)
+    cmdline: $cmdline
+    protocol: linux
+    path: boot():/vmlinuz-linux-zen
+    initrd_path: boot():/initramfs-linux-zen-fallback.img
+
+/: nomarchy (linux)
+    cmdline: $cmdline
+    protocol: linux
+    path: boot():/vmlinuz-linux
+    initrd_path: boot():/initramfs-linux.img
+
+/: nomarchy (linux fallback)
+    cmdline: $cmdline
+    protocol: linux
+    path: boot():/vmlinuz-linux
+    initrd_path: boot():/initramfs-linux-fallback.img
 EOF
 
-    cat > /mnt/boot/loader/entries/arch-zen.conf <<EOF
-title   Arch Linux (zen)
-linux   /vmlinuz-linux-zen
-initrd  /initramfs-linux-zen.img
-options cryptdevice=UUID=${luks_uuid}:cryptroot root=/dev/mapper/cryptroot rootflags=subvol=@ rw quiet splash
-EOF
-
-    echo "cryptdevice=UUID=${luks_uuid}:cryptroot root=/dev/mapper/cryptroot rootflags=subvol=@ rw quiet splash" \
-        > /mnt/etc/kernel/cmdline
+    # Entry generator config (used by limine-update / limine-snapper-sync in setup.sh)
+    cp "$SCRIPT_DIR/default/limine/default.conf" /mnt/etc/default/limine
+    sed -i "s|@@CMDLINE@@|$cmdline|g" /mnt/etc/default/limine
 }
 
 setup_greetd() {
@@ -374,7 +403,6 @@ for hook in /usr/share/libalpm/hooks/*mkinitcpio*.hook.disabled; do
     [[ -f "$hook" ]] && mv "$hook" "${hook%.disabled}"
 done
 mkinitcpio -P
-bootctl update
 systemctl disable nomarchy-finalize.service
 EOF
 
@@ -438,7 +466,7 @@ main() {
     persist_wifi
     configure_system
     setup_plymouth
-    setup_bootloader
+    setup_limine
     setup_greetd
     copy_setup_files
     enable_user_setup
