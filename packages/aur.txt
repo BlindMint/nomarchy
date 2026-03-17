@@ -8,7 +8,7 @@ aether
 brave-bin
 brave-beta-bin
 brave-nightly-bin
-typora
+# typora
 
 # Fonts
 ttf-ia-writer
