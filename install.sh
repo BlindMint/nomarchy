@@ -71,7 +71,7 @@ load_tui_config() {
     local tui_bin="$SCRIPT_DIR/tui/nomarchy-setup"
     if [[ -x "$tui_bin" ]]; then
         log "Launching nomarchy setup TUI..."
-        TERM=xterm-256color "$tui_bin"
+        TERM=xterm-256color COLORTERM=truecolor "$tui_bin"
         if [[ -f "$env_file" ]]; then
             # shellcheck source=/dev/null
             source "$env_file"
