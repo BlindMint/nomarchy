@@ -268,11 +268,19 @@ main() {
 
     log "Starting nomarchy setup..."
 
+    # Warm up sudo credentials early. With the nomarchy-setup sudoers rule this
+    # should be passwordless; if it prompts, the rule wasn't written correctly
+    # during install — the user can enter their password once and setup continues.
+    if ! sudo -n true 2>/dev/null; then
+        log "Passwordless sudo not active — you may be prompted once for your password."
+        sudo -v
+    fi
+
     disable_mkinitcpio_hooks
     deploy_configs
-    setup_theme
     install_packages
     install_aur
+    setup_theme
     setup_gpu_drivers
     setup_snapper
     setup_limine_snapper

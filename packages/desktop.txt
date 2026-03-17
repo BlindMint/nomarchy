@@ -119,7 +119,6 @@ hyprshot
 hyprsunset
 hyprutils
 waybar
-xdg-terminal-exec
 xdg-utils
 
 # Notifications

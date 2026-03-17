@@ -20,6 +20,7 @@ yaru-icon-theme
 python-terminaltexteffects
 
 # System
+xdg-terminal-exec
 asdcontrol
 splashctl
 tobi-try

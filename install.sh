@@ -355,7 +355,9 @@ enable_user_setup() {
     # Temporary passwordless sudo so setup.sh can run unattended in the foot terminal.
     # setup.sh removes this rule in mark_complete() when it finishes.
     echo "$INSTALL_USER ALL=(ALL:ALL) NOPASSWD: ALL" \
-        | install -m 440 /dev/stdin /mnt/etc/sudoers.d/nomarchy-setup
+        > /mnt/etc/sudoers.d/nomarchy-setup
+    chmod 440 /mnt/etc/sudoers.d/nomarchy-setup
+    chown root:root /mnt/etc/sudoers.d/nomarchy-setup
 
     # Systemd user service: opens a foot terminal running setup.sh on first Hyprland login.
     # ConditionPathExists prevents it from firing again after setup.sh writes its sentinel.
