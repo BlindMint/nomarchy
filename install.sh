@@ -289,33 +289,35 @@ setup_limine() {
     # Visual config (colors, branding)
     cp "$SCRIPT_DIR/default/limine/limine.conf" /mnt/boot/limine.conf
 
-    # Append initial boot entries (linux-zen first = default, linux as fallback)
-    # limine-update in setup.sh will replace these with auto-generated entries
+    # Append initial boot entries grouped under a "nomarchy" folder.
+    # linux-zen is listed first (Limine boots the first entry by default).
+    # limine-update in setup.sh will regenerate these with auto-generated entries.
     cat >> /mnt/boot/limine.conf <<EOF
 
-/: nomarchy (linux-zen)
-    cmdline: $cmdline
-    protocol: linux
-    path: boot():/vmlinuz-linux-zen
-    initrd_path: boot():/initramfs-linux-zen.img
+/+nomarchy
+  //linux-zen
+  protocol: linux
+  path: boot():/vmlinuz-linux-zen
+  module_path: boot():/initramfs-linux-zen.img
+  cmdline: $cmdline
 
-/: nomarchy (linux-zen fallback)
-    cmdline: $cmdline
-    protocol: linux
-    path: boot():/vmlinuz-linux-zen
-    initrd_path: boot():/initramfs-linux-zen-fallback.img
+  //linux-zen (fallback)
+  protocol: linux
+  path: boot():/vmlinuz-linux-zen
+  module_path: boot():/initramfs-linux-zen-fallback.img
+  cmdline: $cmdline
 
-/: nomarchy (linux)
-    cmdline: $cmdline
-    protocol: linux
-    path: boot():/vmlinuz-linux
-    initrd_path: boot():/initramfs-linux.img
+  //linux
+  protocol: linux
+  path: boot():/vmlinuz-linux
+  module_path: boot():/initramfs-linux.img
+  cmdline: $cmdline
 
-/: nomarchy (linux fallback)
-    cmdline: $cmdline
-    protocol: linux
-    path: boot():/vmlinuz-linux
-    initrd_path: boot():/initramfs-linux-fallback.img
+  //linux (fallback)
+  protocol: linux
+  path: boot():/vmlinuz-linux
+  module_path: boot():/initramfs-linux-fallback.img
+  cmdline: $cmdline
 EOF
 
     # Entry generator config (used by limine-update / limine-snapper-sync in setup.sh)

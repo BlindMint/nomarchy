@@ -15,6 +15,25 @@ error() { echo "[ERROR] $*" >&2; exit 1; }
 
 has_internet() { ping -c1 -W3 archlinux.org &>/dev/null; }
 
+disable_mkinitcpio_hooks() {
+    log "Temporarily disabling mkinitcpio hooks..."
+    [[ -f /usr/share/libalpm/hooks/90-mkinitcpio-install.hook ]] \
+        && sudo mv /usr/share/libalpm/hooks/90-mkinitcpio-install.hook \
+                   /usr/share/libalpm/hooks/90-mkinitcpio-install.hook.disabled || true
+    [[ -f /usr/share/libalpm/hooks/60-mkinitcpio-remove.hook ]] \
+        && sudo mv /usr/share/libalpm/hooks/60-mkinitcpio-remove.hook \
+                   /usr/share/libalpm/hooks/60-mkinitcpio-remove.hook.disabled || true
+}
+
+enable_mkinitcpio_hooks() {
+    [[ -f /usr/share/libalpm/hooks/90-mkinitcpio-install.hook.disabled ]] \
+        && sudo mv /usr/share/libalpm/hooks/90-mkinitcpio-install.hook.disabled \
+                   /usr/share/libalpm/hooks/90-mkinitcpio-install.hook || true
+    [[ -f /usr/share/libalpm/hooks/60-mkinitcpio-remove.hook.disabled ]] \
+        && sudo mv /usr/share/libalpm/hooks/60-mkinitcpio-remove.hook.disabled \
+                   /usr/share/libalpm/hooks/60-mkinitcpio-remove.hook || true
+}
+
 install_packages() {
     local pkgs
     pkgs=$(grep -v '^\s*#' "$NOMARCHY_DIR/packages/desktop.txt" | grep -v '^\s*$' | tr '\n' ' ')
@@ -199,7 +218,18 @@ setup_limine_snapper() {
         return
     fi
 
+    # limine-mkinitcpio-hook: installs pacman hooks for auto-entry-generation on kernel
+    # updates, and provides the btrfs-overlayfs mkinitcpio hook for snapshot booting.
+    # limine-snapper-sync: auto-generates Limine entries from snapper snapshots.
     paru -S --noconfirm --needed aur/limine-mkinitcpio-hook aur/limine-snapper-sync
+
+    # Add btrfs-overlayfs to HOOKS (provided by limine-mkinitcpio-hook).
+    # This must happen before limine-update, which rebuilds the initramfs.
+    # Without it, booting into a snapshot would fail — the hook sets up an overlayfs
+    # so the read-only snapshot subvolume can accept writes via a tmpfs upper layer.
+    sudo tee /etc/mkinitcpio.conf.d/nomarchy-limine.conf >/dev/null <<'EOF'
+HOOKS=(base udev plymouth keyboard autodetect microcode modconf kms keymap consolefont block encrypt filesystems fsck btrfs-overlayfs)
+EOF
 
     # Write entry generator config (cmdline extracted from current limine.conf)
     local limine_conf="/boot/limine.conf"
@@ -214,6 +244,12 @@ setup_limine_snapper() {
 
     sudo systemctl enable limine-snapper-sync.service
 
+    # Re-enable standard mkinitcpio hooks before the final rebuild.
+    # After limine-mkinitcpio-hook is installed, its hook in /etc/pacman.d/hooks/
+    # takes precedence for future kernel updates.
+    enable_mkinitcpio_hooks
+
+    # Rebuilds initramfs (with btrfs-overlayfs now present) and regenerates Limine entries
     sudo limine-update
 }
 
@@ -232,6 +268,7 @@ main() {
 
     log "Starting nomarchy setup..."
 
+    disable_mkinitcpio_hooks
     deploy_configs
     setup_theme
     install_packages
