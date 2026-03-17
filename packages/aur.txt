@@ -8,7 +8,6 @@ aether
 brave-bin
 brave-beta-bin
 brave-nightly-bin
-pinta
 typora
 
 # Fonts

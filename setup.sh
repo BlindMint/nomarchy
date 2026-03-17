@@ -98,6 +98,11 @@ deploy_configs() {
 }
 
 setup_theme() {
+    # Brave browser policy directory — required for nomarchy-theme-set-browser to write
+    # the managed color policy. Must exist and be world-writable before theme runs.
+    sudo mkdir -p /etc/brave/policies/managed
+    sudo chmod a+rw /etc/brave/policies/managed
+
     local theme="${INSTALL_THEME:-catppuccin}"
     if [[ -d "$NOMARCHY_DIR/themes/$theme" ]]; then
         log "Setting default theme: $theme"
