@@ -41,7 +41,7 @@ install_packages() {
 }
 
 install_paru() {
-    if command -v paru &>/dev/null; then return; fi
+    if paru --version &>/dev/null; then return; fi
     log "Installing paru..."
     rm -rf /tmp/paru-build
     git clone https://aur.archlinux.org/paru.git /tmp/paru-build
@@ -127,7 +127,7 @@ setup_gpu_drivers() {
             && nvidia_driver="nvidia-open-dkms"
 
         sudo pacman -S --noconfirm --needed \
-            "${headers[@]}" "$nvidia_driver" nvidia-utils lib32-nvidia-utils \
+            "${headers[@]}" "$nvidia_driver" nvidia-utils nvidia-settings \
             egl-wayland libva-nvidia-driver
 
         sudo mkdir -p /etc/modprobe.d
@@ -191,9 +191,46 @@ setup_hardware() {
 
 setup_mimetypes() {
     # xdg-mime defaults
+    xdg-mime default org.gnome.Nautilus.desktop inode/directory
     xdg-mime default imv.desktop image/png image/jpeg image/gif image/webp image/svg+xml
     xdg-mime default mpv.desktop video/mp4 video/webm audio/mp3 audio/flac
     xdg-mime default typora.desktop text/markdown application/pdf
+}
+
+setup_gnome_keyring() {
+    # Create a passwordless Default_keyring so gnome-keyring auto-unlocks without
+    # a login password. This is compatible with greetd auto-login: no password is
+    # entered at login, so PAM can't decrypt an encrypted keyring — a passwordless
+    # one sidesteps that entirely. Security at rest is provided by LUKS.
+    local keyring_dir="$USER_HOME/.local/share/keyrings"
+    local keyring_file="$keyring_dir/Default_keyring.keyring"
+    local default_file="$keyring_dir/default"
+
+    if [[ ! -f "$keyring_file" ]]; then
+        mkdir -p "$keyring_dir"
+        cat > "$keyring_file" <<EOF
+[keyring]
+display-name=Default keyring
+ctime=$(date +%s)
+mtime=0
+lock-on-idle=false
+lock-after=false
+EOF
+        cat > "$default_file" <<EOF
+Default_keyring
+EOF
+        chmod 700 "$keyring_dir"
+        chmod 600 "$keyring_file"
+        chmod 644 "$default_file"
+    fi
+
+    # Start gnome-keyring daemon on session open via greetd's PAM config.
+    # Only the session line is added — omitting auth/password phases prevents
+    # PAM from creating a conflicting encrypted login.keyring.
+    if ! grep -q 'pam_gnome_keyring\.so' /etc/pam.d/greetd; then
+        echo '-session   optional    pam_gnome_keyring.so auto_start' \
+            | sudo tee -a /etc/pam.d/greetd > /dev/null
+    fi
 }
 
 setup_firewall() {
@@ -262,7 +299,10 @@ EOF
 mark_complete() {
     mkdir -p "$(dirname "$SENTINEL")"
     touch "$SENTINEL"
-    sudo rm -f /etc/sudoers.d/zz-nomarchy-setup
+    # Remove the temporary NOPASSWD line appended during install, leaving only
+    # the standard wheel rule.
+    echo "%wheel ALL=(ALL:ALL) ALL" | sudo tee /etc/sudoers.d/wheel > /dev/null
+    sudo chmod 440 /etc/sudoers.d/wheel
 }
 
 main() {
@@ -274,11 +314,12 @@ main() {
 
     log "Starting nomarchy setup..."
 
-    # Warm up sudo credentials early. With the nomarchy-setup sudoers rule this
-    # should be passwordless; if it prompts, the rule wasn't written correctly
-    # during install — the user can enter their password once and setup continues.
+    # Warm up sudo credentials early. The install appended a NOPASSWD rule to
+    # /etc/sudoers.d/wheel, so this should be passwordless. If it prompts, that
+    # rule is missing — the user can enter their password once and setup continues.
     if ! sudo -n true 2>/dev/null; then
-        log "Passwordless sudo not active — you may be prompted once for your password."
+        log "Passwordless sudo not active (expected NOPASSWD line in /etc/sudoers.d/wheel)."
+        log "Files in sudoers.d: $(ls /etc/sudoers.d/ 2>/dev/null | tr '\n' ' ')"
         sudo -v
     fi
 
@@ -291,6 +332,7 @@ main() {
     setup_snapper
     setup_limine_snapper
     setup_hardware
+    setup_gnome_keyring
     setup_mimetypes
     setup_firewall
     setup_docker
