@@ -1,0 +1,12 @@
+#!/bin/bash
+
+# Overwrite the user config for the Limine bootloader and rebuild it.
+
+echo "Resetting limine config"
+
+sudo mv /boot/limine.conf /boot/limine.conf.bak
+
+sudo cp "$HOME/.local/share/nomarchy/default/limine/limine.conf" /boot/limine.conf
+
+sudo limine-update
+sudo limine-snapper-sync

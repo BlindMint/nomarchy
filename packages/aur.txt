@@ -2,11 +2,12 @@
 
 # Launcher / UI
 walker-bin
-hyprland-preview-share-picker
 aether
-swaynotificationcenter
 
 # Apps
+brave-bin
+brave-beta-bin
+brave-nightly-bin
 pinta
 typora
 
@@ -21,9 +22,6 @@ python-terminaltexteffects
 
 # System
 xdg-terminal-exec
-asdcontrol
-splashctl
-tobi-try
 tzupdate
 ufw-docker
 chkrootkit

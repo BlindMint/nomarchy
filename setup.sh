@@ -54,7 +54,7 @@ install_paru() {
 
 install_aur_packages() {
     local pkgs
-    pkgs=$(grep -v '^\s*#' "$NOMARCHY_DIR/packages/aur.txt" | grep -v '^\s*$' | sed 's|^|aur/|' | tr '\n' ' ')
+    pkgs=$(grep -v '^\s*#' "$NOMARCHY_DIR/packages/aur.txt" | grep -v '^\s*$' | tr '\n' ' ')
     paru -S --noconfirm --needed $pkgs </dev/null || log "Some AUR packages failed"
 }
 

@@ -124,6 +124,7 @@ xdg-utils
 # Notifications
 dunst
 mako
+swaync
 swayosd
 
 # Fonts
