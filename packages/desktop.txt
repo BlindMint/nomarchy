@@ -73,6 +73,7 @@ wireless-regdb
 
 # Hardware
 android-tools
+alsa-ucm-conf
 alsa-utils
 libpulse
 pavucontrol
@@ -172,6 +173,7 @@ docker-compose
 
 # Drivers and firmware
 linux-firmware
+sof-firmware
 btrfs-progs
 exfatprogs
 ntfs-3g
