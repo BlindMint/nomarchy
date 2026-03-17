@@ -18,7 +18,7 @@ USER_PASSWORD=""
 BOOT_PART=""
 LUKS_PART=""
 
-log() { echo "[*] $*"; }
+log() { printf '\e[40m\e[37m'; echo "[*] $*"; }
 error() { echo "[ERROR] $*" >&2; exit 1; }
 
 # Apply the nomarchy dark background (#1E1E2E) to the terminal.
@@ -35,6 +35,13 @@ reset_terminal_theme() {
     printf '\e]P0000000'       # Restore color-0 to true black
     printf '\e[0m'             # Reset all attributes
     printf '\e]111\a'          # OSC 111: reset terminal background to default
+}
+
+# Reassert foreground/background without clearing the screen.
+# Called after chroot commands that emit \e[0m or \e[49m and clobber our colors.
+reapply_colors() {
+    printf '\e[40m'            # background to color-0 (remapped to #1E1E2E)
+    printf '\e[37m'            # light grey foreground
 }
 
 trap reset_terminal_theme EXIT
@@ -263,6 +270,7 @@ setup_plymouth() {
 
     arch-chroot /mnt plymouth-set-default-theme nomarchy
     arch-chroot /mnt mkinitcpio -P
+    reapply_colors
 }
 
 setup_limine() {
@@ -342,6 +350,7 @@ EOF
 
     arch-chroot /mnt systemctl enable greetd
     arch-chroot /mnt systemctl mask getty@tty1.service
+    reapply_colors
 }
 
 copy_setup_files() {
@@ -354,10 +363,12 @@ copy_setup_files() {
 enable_user_setup() {
     # Temporary passwordless sudo so setup.sh can run unattended in the foot terminal.
     # setup.sh removes this rule in mark_complete() when it finishes.
+    # Named zz-nomarchy-setup so it sorts after 'wheel' alphabetically — sudo uses
+    # last-match-wins, so this must come after the wheel rule to take effect.
     echo "$INSTALL_USER ALL=(ALL:ALL) NOPASSWD: ALL" \
-        > /mnt/etc/sudoers.d/nomarchy-setup
-    chmod 440 /mnt/etc/sudoers.d/nomarchy-setup
-    chown root:root /mnt/etc/sudoers.d/nomarchy-setup
+        > /mnt/etc/sudoers.d/zz-nomarchy-setup
+    chmod 440 /mnt/etc/sudoers.d/zz-nomarchy-setup
+    chown root:root /mnt/etc/sudoers.d/zz-nomarchy-setup
 
     # Systemd user service: opens a foot terminal running setup.sh on first Hyprland login.
     # ConditionPathExists prevents it from firing again after setup.sh writes its sentinel.

@@ -43,10 +43,9 @@ install_packages() {
 install_paru() {
     if command -v paru &>/dev/null; then return; fi
     log "Installing paru..."
-    mkdir -p /tmp/paru-build
+    rm -rf /tmp/paru-build
+    git clone https://aur.archlinux.org/paru.git /tmp/paru-build
     cd /tmp/paru-build
-    git clone https://aur.archlinux.org/paru.git
-    cd paru
     makepkg -si --noconfirm
     cd /
     rm -rf /tmp/paru-build
@@ -138,12 +137,14 @@ setup_gpu_drivers() {
         echo "MODULES+=(nvidia nvidia_modeset nvidia_uvm nvidia_drm)" \
             | sudo tee /etc/mkinitcpio.conf.d/nvidia.conf >/dev/null
 
-        # Write Hyprland env vars
-        cat >> "$USER_HOME/.config/hypr/env.conf" <<'EOF'
+        # Write Hyprland env vars (guard against re-run duplicates)
+        if ! grep -qF 'LIBVA_DRIVER_NAME,nvidia' "$USER_HOME/.config/hypr/env.conf" 2>/dev/null; then
+            cat >> "$USER_HOME/.config/hypr/env.conf" <<'EOF'
 env = LIBVA_DRIVER_NAME,nvidia
 env = __GLX_VENDOR_LIBRARY_NAME,nvidia
 env = NVD_BACKEND,direct
 EOF
+        fi
 
     elif echo "$gpu_info" | grep -qi 'amd\|radeon'; then
         sudo pacman -S --noconfirm --needed \
@@ -261,7 +262,7 @@ EOF
 mark_complete() {
     mkdir -p "$(dirname "$SENTINEL")"
     touch "$SENTINEL"
-    sudo rm -f /etc/sudoers.d/nomarchy-setup
+    sudo rm -f /etc/sudoers.d/zz-nomarchy-setup
 }
 
 main() {

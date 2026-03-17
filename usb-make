@@ -31,7 +31,6 @@ error()  { echo -e "${RED}[ERROR]${NC} $*"; exit 1; }
 prompt() { echo -e "${CYAN}[?]${NC} $*"; }
 
 header() {
-    clear
     echo -e "${BOLD}${BLUE}"
     echo "╔═══════════════════════════════════════════════════════════╗"
     echo "║              nomarchy USB Setup                           ║"
