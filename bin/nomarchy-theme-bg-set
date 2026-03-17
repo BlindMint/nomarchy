@@ -7,12 +7,13 @@ if [[ -z $1 ]]; then
   exit 1
 fi
 
-BACKGROUND="$1"
+BACKGROUND=$(realpath "$1")
 CURRENT_BACKGROUND_LINK="$HOME/.config/nomarchy/current/background"
 
-# Create symlink to the new background
+# Update symlink
 ln -nsf "$BACKGROUND" "$CURRENT_BACKGROUND_LINK"
 
-# Kill existing swaybg and start new one
-pkill -x swaybg
-setsid uwsm-app -- swaybg -i "$CURRENT_BACKGROUND_LINK" -m fill >/dev/null 2>&1 &
+# Apply via hyprpaper IPC
+hyprctl monitors -j | jq -r '.[].name' | while read -r monitor; do
+  hyprctl hyprpaper wallpaper "$monitor,$BACKGROUND"
+done

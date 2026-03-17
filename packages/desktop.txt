@@ -100,8 +100,6 @@ obs-studio
 satty
 slurp
 sushi
-swaybg
-swayimg
 viu
 wl-clipboard
 
@@ -121,9 +119,7 @@ waybar
 xdg-utils
 
 # Notifications
-dunst
 mako
-swaync
 swayosd
 
 # Fonts

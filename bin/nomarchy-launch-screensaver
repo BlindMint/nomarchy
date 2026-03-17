@@ -43,6 +43,10 @@ for m in $(hyprctl monitors -j | jq -r '.[] | .name'); do
       kitty --class=org.nomarchy.screensaver \
       --override font_size=18 \
       --override window_padding_width=0 \
+      --override remember_window_size=no \
+      --override initial_window_width=100c \
+      --override initial_window_height=50c \
+      --start-as=fullscreen \
       -e nomarchy-cmd-screensaver
     ;;
   *)

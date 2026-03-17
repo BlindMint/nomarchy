@@ -3,6 +3,7 @@
 # Launcher / UI
 walker-bin
 aether
+elephant-all
 
 # Apps
 brave-bin

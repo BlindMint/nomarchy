@@ -233,6 +233,12 @@ EOF
     fi
 }
 
+setup_walker() {
+    command -v elephant &>/dev/null || return 0
+    elephant service enable || true
+    command -v walker &>/dev/null && nomarchy-refresh-walker || true
+}
+
 setup_firewall() {
     command -v ufw &>/dev/null && sudo ufw enable || true
 }
@@ -334,6 +340,7 @@ main() {
     setup_hardware
     setup_gnome_keyring
     setup_mimetypes
+    setup_walker
     setup_firewall
     setup_docker
     finalize_bootloader

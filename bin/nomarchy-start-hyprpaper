@@ -1,0 +1,37 @@
+#!/bin/bash
+
+# Starts hyprpaper and applies the current wallpaper via IPC.
+# Resolves symlinks and uses explicit per-monitor IPC calls instead of relying
+# on the config wallpaper directive, which does not work reliably in all versions.
+
+BACKGROUND=$(readlink -f "$HOME/.config/nomarchy/current/background" 2>/dev/null)
+HYPRPAPER_CONF="$HOME/.config/hypr/hyprpaper.conf"
+
+# Write config with preload only — wallpaper is applied via IPC below
+if [[ -n $BACKGROUND && -f $BACKGROUND ]]; then
+  cat > "$HYPRPAPER_CONF" <<EOF
+preload = $BACKGROUND
+splash = false
+ipc = on
+EOF
+fi
+
+# Start hyprpaper in background and wait for its socket to appear
+hyprpaper &
+HYPRPAPER_PID=$!
+
+if [[ -n $BACKGROUND && -f $BACKGROUND ]]; then
+  SOCKET_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/hypr"
+  for _ in $(seq 20); do
+    sleep 0.5
+    if ls "$SOCKET_DIR"/*.hyprpaper.sock 2>/dev/null | grep -q .; then
+      break
+    fi
+  done
+
+  hyprctl monitors -j | jq -r '.[].name' | while read -r monitor; do
+    hyprctl hyprpaper wallpaper "$monitor,$BACKGROUND"
+  done
+fi
+
+wait "$HYPRPAPER_PID"
