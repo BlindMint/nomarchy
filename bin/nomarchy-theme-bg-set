@@ -13,7 +13,9 @@ CURRENT_BACKGROUND_LINK="$HOME/.config/nomarchy/current/background"
 # Update symlink
 ln -nsf "$BACKGROUND" "$CURRENT_BACKGROUND_LINK"
 
-# Apply via hyprpaper IPC
-hyprctl monitors -j | jq -r '.[].name' | while read -r monitor; do
-  hyprctl hyprpaper wallpaper "$monitor,$BACKGROUND"
-done
+# Apply via hyprpaper IPC (only if hyprpaper is already running)
+if pgrep -x hyprpaper > /dev/null; then
+  hyprctl monitors -j | jq -r '.[].name' | while read -r monitor; do
+    hyprctl hyprpaper wallpaper "$monitor,$BACKGROUND"
+  done
+fi

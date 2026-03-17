@@ -52,8 +52,13 @@ install_paru() {
 }
 
 install_aur_packages() {
+    # Install elephant-all first — it provides and conflicts with the base 'elephant'
+    # package. walker-bin depends on 'elephant', so installing elephant-all beforehand
+    # lets paru satisfy that dependency without hitting a conflict.
+    paru -S --noconfirm --needed elephant-all </dev/null || log "elephant-all install failed"
+
     local pkgs
-    pkgs=$(grep -v '^\s*#' "$NOMARCHY_DIR/packages/aur.txt" | grep -v '^\s*$' | tr '\n' ' ')
+    pkgs=$(grep -v '^\s*#' "$NOMARCHY_DIR/packages/aur.txt" | grep -v '^\s*$' | grep -v '^elephant-all$' | tr '\n' ' ')
     paru -S --noconfirm --needed $pkgs </dev/null || log "Some AUR packages failed"
 }
 
@@ -151,7 +156,7 @@ EOF
             mesa lib32-mesa vulkan-radeon lib32-vulkan-radeon libva-mesa-driver
     elif echo "$gpu_info" | grep -qi 'intel'; then
         sudo pacman -S --noconfirm --needed \
-            intel-media-driver vulkan-intel lib32-vulkan-intel
+            intel-media-driver vulkan-intel
     fi
 }
 

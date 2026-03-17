@@ -244,7 +244,6 @@ get_iso() {
 # =============================================================================
 
 select_usb() {
-    header
     echo -e "${BOLD}Step 2: Select Target USB Drive${NC}"
     echo ""
     echo -e "${RED}${BOLD}WARNING: All data on the selected device will be PERMANENTLY ERASED!${NC}"
@@ -283,7 +282,6 @@ select_usb() {
     [[ -b "$USB_DEVICE" ]] || error "Device $USB_DEVICE does not exist"
 
     # Confirmation round 1: type the device name
-    header
     echo -e "${BOLD}${RED}╔══════════════════════════════════════════════════════════════╗${NC}"
     echo -e "${BOLD}${RED}║            ⚠  DANGER: DESTRUCTIVE OPERATION  ⚠              ║${NC}"
     echo -e "${BOLD}${RED}╚══════════════════════════════════════════════════════════════╝${NC}"
@@ -325,7 +323,6 @@ select_usb() {
 # =============================================================================
 
 write_iso() {
-    header
     echo -e "${BOLD}Step 3: Write ISO to USB${NC}"
     echo ""
 
@@ -354,7 +351,6 @@ write_iso() {
 # =============================================================================
 
 create_config_partition() {
-    header
     echo -e "${BOLD}Step 4: Create Config Partition${NC}"
     echo ""
 
@@ -419,7 +415,6 @@ create_config_partition() {
 # =============================================================================
 
 build_tui() {
-    header
     echo -e "${BOLD}Step 5: Build TUI${NC}"
     echo ""
 
@@ -440,7 +435,6 @@ build_tui() {
 # =============================================================================
 
 copy_files() {
-    header
     echo -e "${BOLD}Step 6: Copy nomarchy to USB${NC}"
     echo ""
 
@@ -460,7 +454,6 @@ copy_files() {
 # =============================================================================
 
 summary() {
-    header
     echo -e "${BOLD}${GREEN}✓ USB Setup Complete!${NC}"
     echo ""
     echo -e "  ISO     : $(basename "$ISO_PATH")"
